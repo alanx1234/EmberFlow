@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# next.js
+.next/
+out/
+next-env.d.ts
+
+# production
+build/
+dist/
+
+# vercel
+.vercel
+
+# testing
+coverage/
+playwright-report/
+test-results/
+
+# misc
+.DS_Store
+*.pem
+.env*.local
+*.tsbuildinfo
