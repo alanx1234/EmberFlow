@@ -2,10 +2,12 @@ import type { NextConfig } from "next";
 
 // The FastAPI bridge (api/index.py) runs as a torch service, not on Vercel.
 //   • development  → the bridge runs locally on :8000 (npm run dev:api)
-//   • production   → the bridge runs on Render; set API_BRIDGE_URL in Vercel
-//                    (e.g. https://emberflow-bridge.onrender.com) and /api/*
-//                    is proxied there. Nothing in the React code changes.
-const API_BRIDGE_URL = process.env.API_BRIDGE_URL;
+//   • production   → /api/* is proxied to the Render bridge below. The URL is
+//                    public (not a secret), so it's hardcoded to avoid the
+//                    build-time env-var pitfalls; override with API_BRIDGE_URL
+//                    if you ever move the bridge.
+const API_BRIDGE_URL =
+  process.env.API_BRIDGE_URL ?? "https://emberflow-bridge.onrender.com";
 
 const nextConfig: NextConfig = {
   rewrites: async () => {
