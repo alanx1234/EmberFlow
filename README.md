@@ -1,1 +1,1 @@
-An interactive web tool for ChronoFlow--EmberFlow, a data-driven probabilistic gyrochronology model for M dwarfs : [chronoflow-emberflow.vercel.app](chronoflow-emberflow.vercel.app)
+An interactive web tool for ChronoFlow--EmberFlow, a data-driven probabilistic gyrochronology model for M dwarfs : [chronoflow-emberflow.vercel.app](https://chronoflow-emberflow.vercel.app)
