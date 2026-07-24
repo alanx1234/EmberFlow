@@ -26,3 +26,6 @@ test-results/
 *.pem
 .env*.local
 *.tsbuildinfo
+
+.vercel
+.env*

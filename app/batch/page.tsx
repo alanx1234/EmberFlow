@@ -13,6 +13,8 @@ import { BatchTable, MAX_COMPARE } from "@/components/batch-table";
 import { PosteriorChart } from "@/components/posterior-chart";
 import { CompareEntry, PosteriorCompare, COMPARE_COLORS } from "@/components/posterior-compare";
 
+// Sent per request to the Cloud Run bridge (2 GB / 2 CPU). 500/request runs in
+// ~6s there, comfortably under the proxy timeout, with no memory pressure.
 const CHUNK = 500;
 const MAX_STARS = 10000;
 const PRIOR = "flat_in_log_age" as const;
