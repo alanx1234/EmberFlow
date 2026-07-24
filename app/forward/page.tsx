@@ -88,7 +88,8 @@ export default function ForwardPage() {
         </h1>
         <p className="lede">
           Given an age and mass, what rotation periods does EmberFlow&apos;s
-          learned density p(log P<sub>rot</sub> | τ, M<sub>★</sub>) predict?
+          learned density p(log P<sub>rot</sub> | τ, M<sub>★</sub>, σ
+          <sub>M</sub>) predict?
         </p>
       </div>
 
