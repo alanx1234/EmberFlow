@@ -11,23 +11,15 @@ const API_BRIDGE_URL =
 
 const nextConfig: NextConfig = {
   rewrites: async () => {
-    if (process.env.NODE_ENV === "development") {
-      return [
-        {
-          source: "/api/:path*",
-          destination: "http://127.0.0.1:8000/api/:path*",
-        },
-      ];
-    }
-    if (API_BRIDGE_URL) {
-      return [
-        {
-          source: "/api/:path*",
-          destination: `${API_BRIDGE_URL}/api/:path*`,
-        },
-      ];
-    }
-    return [];
+    const destination =
+      process.env.NODE_ENV === "development"
+        ? "http://127.0.0.1:8000/api/:path*"
+        : `${API_BRIDGE_URL}/api/:path*`;
+    // beforeFiles: proxy /api/* BEFORE any route/404 matching (App Router can
+    // otherwise 404 an afterFiles rewrite for an unmatched path).
+    return {
+      beforeFiles: [{ source: "/api/:path*", destination }],
+    };
   },
 };
 
