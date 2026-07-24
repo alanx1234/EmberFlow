@@ -1,0 +1,6 @@
+# The Vercel Python function installs via uv. requirements.txt adds the
+# PyTorch CPU wheel index (download.pytorch.org/whl/cpu), which also hosts
+# old copies of build deps like `packaging`/`hatchling`. uv's default
+# "first-index-wins" strategy then pins those to stale versions and the
+# resolve fails. Consider all (trusted) indexes and take the best version.
+index-strategy = "unsafe-best-match"
