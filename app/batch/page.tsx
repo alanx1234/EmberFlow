@@ -26,6 +26,9 @@ export default function BatchPage() {
   const [parsed, setParsed] = useState<ParsedCsv | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(
+    null,
+  );
   const [results, setResults] = useState<BatchResult[] | null>(null);
 
   const [inspectedIdx, setInspectedIdx] = useState<number | null>(null);
@@ -59,6 +62,7 @@ export default function BatchPage() {
     }
     setBusy(true);
     setError(null);
+    setProgress({ done: 0, total: valid.length });
     try {
       const all: BatchResult[] = [];
       for (let i = 0; i < valid.length; i += CHUNK) {
@@ -68,6 +72,7 @@ export default function BatchPage() {
           prior: PRIOR,
         });
         all.push(...res.results);
+        setProgress({ done: all.length, total: valid.length });
       }
       setResults(all);
       setStage("results");
@@ -81,6 +86,7 @@ export default function BatchPage() {
       );
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   };
 
@@ -195,6 +201,28 @@ export default function BatchPage() {
             onRun={run}
             onReset={reset}
           />
+          {busy && progress && (
+            <div className="batch-progress" role="status" aria-live="polite">
+              <div className="batch-progress-head">
+                <span className="label">
+                  <span className="spinner" aria-hidden /> Estimating ages…
+                </span>
+                <span className="count">
+                  {progress.done.toLocaleString()} /{" "}
+                  {progress.total.toLocaleString()} stars ·{" "}
+                  {Math.round((progress.done / progress.total) * 100)}%
+                </span>
+              </div>
+              <div className="batch-progress-track">
+                <div
+                  className="batch-progress-fill"
+                  style={{
+                    width: `${Math.max(3, Math.round((progress.done / progress.total) * 100))}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </section>
       )}
 
