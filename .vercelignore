@@ -1,0 +1,6 @@
+# The FastAPI bridge (api/) runs on a Hugging Face Space, not Vercel. Excluding
+# it stops Vercel from auto-detecting a Python serverless function and bundling
+# torch (which blows past the 500 MB function-size limit). In production /api/*
+# is proxied to the Space via the rewrite in next.config.ts (API_BRIDGE_URL);
+# api/ stays in the repo only for local dev (npm run dev:api).
+api/
