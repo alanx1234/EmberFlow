@@ -1,15 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, getModelInfo, postAge, postAgeBatch } from "@/lib/api";
-import {
-  AgeResponse,
-  BatchResult,
-  ModelInfo,
-} from "@/lib/schemas";
-import { autoMapColumns, ColumnMapping, posteriorToCsv, toCsv, ValidRow } from "@/lib/csv";
+import Link from "next/link";
+import { ApiError, postAge, postAgeBatch } from "@/lib/api";
+import { AgeResponse, BatchResult } from "@/lib/schemas";
+import { posteriorToCsv, toCsv, ValidRow } from "@/lib/csv";
 import { downloadCsv, slugify } from "@/lib/download";
-import { formatAgeGyr } from "@/lib/format-age";
+import { formatAgeWithErrors } from "@/lib/format-age";
 import { BatchUploader, ParsedCsv } from "@/components/batch-uploader";
 import { ColumnMapper } from "@/components/column-mapper";
 import { BatchTable, MAX_COMPARE } from "@/components/batch-table";
@@ -17,20 +14,16 @@ import { PosteriorChart } from "@/components/posterior-chart";
 import { CompareEntry, PosteriorCompare, COMPARE_COLORS } from "@/components/posterior-compare";
 
 const CHUNK = 500;
-const MAX_STARS = 5000;
+const MAX_STARS = 10000;
 const PRIOR = "flat_in_log_age" as const;
 
 type Stage = "upload" | "map" | "results";
 
 export default function BatchPage() {
-  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
-  const [modelError, setModelError] = useState<string | null>(null);
   const [stage, setStage] = useState<Stage>("upload");
   const [parsed, setParsed] = useState<ParsedCsv | null>(null);
-  const [mapping, setMapping] = useState<ColumnMapping>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState<[number, number] | null>(null);
   const [results, setResults] = useState<BatchResult[] | null>(null);
 
   const [inspectedIdx, setInspectedIdx] = useState<number | null>(null);
@@ -38,20 +31,9 @@ export default function BatchPage() {
   const [posteriors, setPosteriors] = useState<Record<number, AgeResponse>>({});
   const inflight = useRef(new Set<number>());
 
-  useEffect(() => {
-    getModelInfo()
-      .then(setModelInfo)
-      .catch((e) =>
-        setModelError(
-          e instanceof ApiError ? e.message : "Could not load the model card.",
-        ),
-      );
-  }, []);
-
   const reset = () => {
     setStage("upload");
     setParsed(null);
-    setMapping({});
     setResults(null);
     setError(null);
     setInspectedIdx(null);
@@ -63,12 +45,10 @@ export default function BatchPage() {
   const onParsed = (p: ParsedCsv) => {
     setError(null);
     setParsed(p);
-    setMapping(autoMapColumns(p.headers));
     setStage("map");
   };
 
-  const run = async (valid: ValidRow[], usedMapping: ColumnMapping) => {
-    setMapping(usedMapping);
+  const run = async (valid: ValidRow[]) => {
     if (valid.length > MAX_STARS) {
       setError(
         `That is ${valid.length.toLocaleString()} stars — the web tool caps batches at ${MAX_STARS.toLocaleString()}. For large catalogs use the Python package's age_posteriors() / summarize().`,
@@ -81,7 +61,6 @@ export default function BatchPage() {
       const all: BatchResult[] = [];
       for (let i = 0; i < valid.length; i += CHUNK) {
         const chunk = valid.slice(i, i + CHUNK);
-        setProgress([i, valid.length]);
         const res = await postAgeBatch({
           stars: chunk.map((v) => v.star),
           prior: PRIOR,
@@ -100,7 +79,6 @@ export default function BatchPage() {
       );
     } finally {
       setBusy(false);
-      setProgress(null);
     }
   };
 
@@ -166,6 +144,13 @@ export default function BatchPage() {
     inspectedIdx !== null && results ? results[inspectedIdx] : null;
   const inspectedPosterior =
     inspectedIdx !== null ? posteriors[inspectedIdx] : undefined;
+  const inspectedFmt = inspectedPosterior
+    ? formatAgeWithErrors(
+        inspectedPosterior.summary.p50_gyr,
+        inspectedPosterior.summary.p50_gyr - inspectedPosterior.summary.p16_gyr,
+        inspectedPosterior.summary.p84_gyr - inspectedPosterior.summary.p50_gyr,
+      )
+    : null;
 
   const compareEntries: CompareEntry[] = selectedIdxs
     .filter((idx) => posteriors[idx])
@@ -177,18 +162,15 @@ export default function BatchPage() {
   return (
     <div className="container page">
       <div className="page-head">
-        <h1>Batch age estimates</h1>
+        <h1>
+          <span className="title-glyph" aria-hidden>⁂</span>
+          Batch age estimates
+        </h1>
         <p className="lede">
           Upload a CSV of independent stars and get one age estimate per star.
-          Files are parsed in your browser and never stored.
         </p>
       </div>
 
-      {modelError && (
-        <div className="alert alert-error" role="alert" style={{ marginBottom: "1rem" }}>
-          {modelError}
-        </div>
-      )}
       {error && (
         <div className="alert alert-error" role="alert" style={{ marginBottom: "1rem" }}>
           {error}
@@ -201,30 +183,16 @@ export default function BatchPage() {
         </section>
       )}
 
-      {stage === "map" && parsed && !modelInfo && !modelError && (
-        <section className="card loading-block">
-          <span className="spinner" aria-hidden /> Loading model card…
-        </section>
-      )}
-
-      {stage === "map" && parsed && modelInfo && (
+      {stage === "map" && parsed && (
         <section className="card">
           <ColumnMapper
             fileName={parsed.fileName}
             headers={parsed.headers}
             rows={parsed.rows}
-            initialMapping={mapping}
-            modelInfo={modelInfo}
             busy={busy}
             onRun={run}
             onReset={reset}
           />
-          {busy && progress && (
-            <p className="note" style={{ marginTop: "0.9rem" }}>
-              Estimating… {Math.min(progress[0] + CHUNK, progress[1]).toLocaleString()} of{" "}
-              {progress[1].toLocaleString()} stars.
-            </p>
-          )}
         </section>
       )}
 
@@ -238,7 +206,7 @@ export default function BatchPage() {
               <h3 style={{ margin: 0 }}>
                 Results{" "}
                 <span className="hint">
-                  — {results.length.toLocaleString()} stars, 68% intervals
+                  — {results.length.toLocaleString()} stars
                 </span>
               </h3>
               <div className="btn-row">
@@ -276,16 +244,7 @@ export default function BatchPage() {
                 style={{ justifyContent: "space-between", marginBottom: "0.6rem" }}
               >
                 <h3 style={{ margin: 0 }}>
-                  {inspected.source_id ?? "Selected star"}{" "}
-                  {inspectedPosterior && (
-                    <span className="hint">
-                      — median{" "}
-                      {formatAgeGyr(inspectedPosterior.summary.p50_gyr).text},
-                      68%{" "}
-                      {formatAgeGyr(inspectedPosterior.summary.p16_gyr).text}–
-                      {formatAgeGyr(inspectedPosterior.summary.p84_gyr).text}
-                    </span>
-                  )}
+                  {inspected.source_id ?? "Selected star"}
                 </h3>
                 <button
                   className="btn btn-ghost btn-sm"
@@ -294,6 +253,17 @@ export default function BatchPage() {
                   Close
                 </button>
               </div>
+              {inspectedFmt && (
+                <div className="batch-estimate">
+                  <span className="batch-estimate-val">
+                    {inspectedFmt.value}
+                    <span className="unit"> {inspectedFmt.unit}</span>
+                  </span>
+                  <span className="batch-estimate-unc">
+                    −{inspectedFmt.errLo} / +{inspectedFmt.errHi} {inspectedFmt.unit}
+                  </span>
+                </div>
+              )}
               {!inspectedPosterior ? (
                 <div className="loading-block">
                   <span className="spinner" aria-hidden /> Loading posterior…
@@ -366,9 +336,9 @@ export default function BatchPage() {
           )}
 
           <p className="note" style={{ marginTop: "1.25rem" }}>
-            Need every full posterior? The web tool returns summaries only —
-            use the Python package&apos;s <code>age_posteriors()</code> for the
-            complete 1,000-point posterior of every star.
+            Inspect any star to download its posterior CSV of 1,000 age points
+            evaluated by the model. For every full posterior at once, see the{" "}
+            <Link href="/docs">Python guide in the documentation</Link>.
           </p>
         </>
       )}

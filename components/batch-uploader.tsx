@@ -2,8 +2,6 @@
 
 import { useRef, useState } from "react";
 import Papa from "papaparse";
-import { TEMPLATE_CSV } from "@/lib/csv";
-import { downloadCsv } from "@/lib/download";
 
 export interface ParsedCsv {
   fileName: string;
@@ -33,7 +31,7 @@ export function BatchUploader({ onParsed, onError }: BatchUploaderProps) {
         const headers = (res.meta.fields ?? []).filter((h) => h.trim() !== "");
         if (headers.length === 0 || res.data.length === 0) {
           onError(
-            "That file has no parseable rows. Expecting a CSV with a header row — try the template below.",
+            "That file has no parseable rows. Expecting a CSV with a header row.",
           );
           return;
         }
@@ -78,7 +76,6 @@ export function BatchUploader({ onParsed, onError }: BatchUploaderProps) {
             <div className="big">Drop a CSV here, or click to browse</div>
             <div>
               One row per star — rotation period (days) and mass (M☉) required.
-              Your file stays in the browser.
             </div>
           </>
         )}
@@ -93,14 +90,6 @@ export function BatchUploader({ onParsed, onError }: BatchUploaderProps) {
             e.target.value = "";
           }}
         />
-      </div>
-      <div className="btn-row" style={{ marginTop: "0.9rem" }}>
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={() => downloadCsv("emberflow_template.csv", TEMPLATE_CSV)}
-        >
-          Download template CSV
-        </button>
       </div>
     </div>
   );

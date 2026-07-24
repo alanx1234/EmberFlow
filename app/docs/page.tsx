@@ -5,17 +5,17 @@ import { BIBTEX, CITATION_NOTE } from "@/lib/citation";
 export const metadata: Metadata = {
   title: "Documentation",
   description:
-    "What EmberFlow estimates, how to interpret its posteriors, model training ranges, and how to use the Python package.",
+    "What EmberFlow estimates, how it infers ages from its learned density, model training ranges, and how to use the Python package.",
 };
 
 const SECTIONS = [
   ["what", "What EmberFlow estimates"],
   ["inputs", "Required inputs"],
-  ["directions", "Age inference vs. forward modeling"],
-  ["priors", "Priors"],
-  ["interpretation", "Medians and credible intervals"],
-  ["multimodality", "Why posteriors can be multimodal"],
+  ["directions", "Age inference and forward modeling"],
+  ["interpretation", "Medians and probability intervals"],
   ["ranges", "Model training ranges"],
+  ["data", "Training data"],
+  ["limitations", "Limitations"],
   ["python", "Python installation"],
   ["single", "Single-star example"],
   ["catalog", "Catalog example"],
@@ -27,10 +27,12 @@ export default function DocsPage() {
   return (
     <div className="container page">
       <div className="page-head">
-        <h1>Documentation</h1>
+        <h1>
+          <span className="title-glyph" aria-hidden>❋</span>
+          Documentation
+        </h1>
         <p className="lede">
-          How EmberFlow turns a rotation period and a mass into a full age
-          posterior — and how to read what it gives you.
+          How EmberFlow turns a rotation period and a mass into a full age posterior — and how to read what it gives you.
         </p>
       </div>
 
@@ -48,8 +50,8 @@ export default function DocsPage() {
         <article className="docs-prose">
           <h2 id="what">What EmberFlow estimates</h2>
           <p>
-            EmberFlow is a probabilistic gyrochronology model for M dwarfs. It
-            extends{" "}
+            EmberFlow is a mass-conditioned probabilistic gyrochronology model
+            calibrated for M dwarfs. It extends{" "}
             <a
               href="https://arxiv.org/abs/2412.12244"
               target="_blank"
@@ -58,118 +60,283 @@ export default function DocsPage() {
               ChronoFlow (Van-Lane et al. 2025)
             </a>{" "}
             with a conditional normalizing flow that learns the density of
-            rotation period given age, stellar mass, and mass uncertainty:
+            rotation period conditioned on age, stellar mass, and mass
+            uncertainty:
           </p>
           <p style={{ textAlign: "center" }}>
             <em>
-              p(log P<sub>rot</sub> | log τ, M<sub>★</sub>, σ<sub>M</sub>)
+              p(log P<sub>rot</sub> | log τ, M<sub>★</sub>,{" "}
+              <span style={{ textTransform: "none" }}>σ</span>
+              <sub>M</sub>)
             </em>
           </p>
           <p>
-            The model is trained on 6,584 unique M dwarfs with measured
-            rotation periods and literature-calibrated ages. Inverting the
-            learned density with Bayes&apos; theorem yields a{" "}
-            <strong>full age posterior per star</strong> rather than a single
-            point estimate. That matters for M dwarfs in particular: one
-            rotation period can map to multiple plausible ages.
+            It is trained on a catalog of 6,584 M dwarfs with measured rotation
+            periods and age estimates. EmberFlow infers stellar ages by
+            inverting this learned density with Bayes&apos; theorem. As a result,
+            each star receives a full age posterior instead of a single point
+            estimate. This especially matters for M dwarfs, as their
+            mass-dependent spin-down means a single rotation period can map to
+            multiple ages, and a posterior illustrates that ambiguity in an honest way.
           </p>
 
           <h2 id="inputs">Required inputs</h2>
           <ul>
             <li>
               <strong>Rotation period</strong> (days) — the measured P
-              <sub>rot</sub>.
+              <sub>rot</sub>
             </li>
             <li>
-              <strong>Stellar mass</strong> (M☉).
+              <strong>Stellar mass</strong> (M☉)
             </li>
             <li>
-              <strong>Mass uncertainty</strong> (M☉, 1σ) — the model conditions
-              on it directly, so passing a realistic value matters. If you have
-              asymmetric uncertainties, use their average, σ<sub>M</sub> =
-              (σ<sub>lo</sub> + σ<sub>hi</sub>) / 2 — the batch uploader does
-              this automatically.
+              <strong>Mass uncertainty</strong> (M☉, 1σ) — preferably a
+              symmetric mass uncertainty. Asymmetric uncertainties are
+              averaged,{" "}
+              <span style={{ whiteSpace: "nowrap" }}>
+                σ<sub>M</sub> = (σ<sub>lo</sub> + σ<sub>hi</sub>) / 2
+              </span>
+              
             </li>
           </ul>
 
-          <h2 id="directions">Age inference vs. forward modeling</h2>
+          <h2 id="directions">Age inference and forward modeling</h2>
           <p>
-            <Link href="/">Estimate Age</Link> runs the model in the{" "}
-            <em>inverse</em> direction: it evaluates the learned density along
-            a grid of 1,000 candidate ages at your star&apos;s fixed period and
-            mass, multiplies by an age prior, and normalizes. The result is
-            p(log τ | P<sub>rot</sub>, M<sub>★</sub>, σ<sub>M</sub>).
+            EmberFlow is trained as a forward model for the conditional
+            distribution of rotation periods, p(log P<sub>rot</sub> | τ, M
+            <sub>★</sub>). The <Link href="/forward">Forward Model</Link> page
+            runs it in this direction: given an age and mass, it returns
+            the distribution of rotation periods the model expects.
+            Essentially, this is what the model has internalized about spin-down behavior
+            at a fixed age and mass.
           </p>
           <p>
-            <Link href="/forward">Forward Model</Link> runs it in the direction
-            it was trained: given an age and mass, it returns the distribution
-            of rotation periods the model expects, p(log P<sub>rot</sub> | τ,
-            M<sub>★</sub>) — useful for building intuition, checking against
-            observed samples, or simulating populations with{" "}
-            <code>sample_prot()</code>.
+            <Link href="/">Estimate Age</Link> runs the model in the inverse direction.
+            Like ChronoFlow
+            , ages are inferred with Bayes&apos; theorem by evaluating the
+            learned density over a grid of 1,000 candidate ages (1 Myr — 13.8 Gyr) at the
+            star&apos;s fixed rotation period and mass, multiplying by a uniform prior in
+            log τ, and then normalizing:
           </p>
-
-          <h2 id="priors">Priors</h2>
-          <ul>
-            <li>
-              <strong>Uniform in log age</strong> (default) — flat in log₁₀ τ
-              over the model grid; equal prior weight per decade of age.
-            </li>
-            <li>
-              <strong>Uniform in linear age</strong> — flat in τ; this puts
-              more prior weight at old ages, and typically shifts posteriors
-              older.
-            </li>
-          </ul>
-          <p>
-            In the Python package these are <code>flat_in_log_age</code> and{" "}
-            <code>flat_in_age</code>; custom priors can be any function of the
-            log-age grid.
+          <p style={{ textAlign: "center" }}>
+            <em>
+              p(log τ | P<sub>rot</sub>, M<sub>★</sub>,{" "}
+              <span style={{ textTransform: "none" }}>σ</span>
+              <sub>M</sub>) ∝ p(log P<sub>rot</sub> | τ, M<sub>★</sub>,{" "}
+              <span style={{ textTransform: "none" }}>σ</span>
+              <sub>M</sub>) p(log τ)
+            </em>
           </p>
 
-          <h2 id="interpretation">Medians and credible intervals</h2>
+          <p>
+            <Link href="/batch">Batch Estimates</Link> allows you to upload your
+            own file of M dwarf rotators and obtain age estimates. For more
+            flexibility with large catalogs, please see the{" "}
+            <a
+              href="https://github.com/alanx1234/EmberFlow"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Python package
+            </a>
+            .
+          </p>
+
+          <h2 id="interpretation">Medians and probability intervals</h2>
           <p>
             By convention, EmberFlow reports the <strong>median</strong> of the
-            age posterior as the point estimate, with the 16th and 84th
-            percentiles as the lower and upper bounds of the 68% credible
-            interval. An estimate of 1.77{" "}
-            <span style={{ whiteSpace: "nowrap" }}>−0.64 / +1.04 Gyr</span>{" "}
-            means 68% of the posterior mass lies between 1.13 and 2.81 Gyr. The
-            interval is a statement about the posterior, not a Gaussian error
-            bar — always inspect the full curve when the interval is wide.
-          </p>
-
-          <h2 id="multimodality">Why posteriors can be multimodal</h2>
-          <p>
-            M dwarfs of similar mass separate into fast- and slow-rotating
-            populations, and spin-down can stall for billions of years. A
-            single rotation period can therefore be consistent with both a
-            young, still-fast star and an older one — the posterior honestly
-            shows two (or more) peaks. Slow rotators that have converged onto
-            the slow-rotating sequence give the tightest constraints; fast
-            rotators tend to produce broad or multimodal posteriors. The
-            median of a strongly bimodal posterior can fall between the peaks,
-            which is one more reason to look at the curve, not just the
-            summary.
+            age posterior as the point estimate. The lower and upper uncertainties of
+            the age estimate
+            reflect the 68% probability interval of the posterior. For instance, an
+            estimate of 1.77{" "}
+            <span style={{ whiteSpace: "nowrap" }}>(−0.64 / +1.04) Gyr</span>{" "}
+            means 68% of the posterior mass lies between 1.13 and 2.81 Gyr. 
           </p>
 
           <h2 id="ranges">Model training ranges</h2>
-          <p>The released model (v0.1.0) was trained on:</p>
-          <ul>
-            <li>Mass: 0.098–0.674 M☉</li>
-            <li>Rotation period: 0.0824–174.4 days</li>
-            <li>Age: 1.5 Myr–11.5 Gyr</li>
+          <p>The released model was trained on:</p>
+          <ul className="range-list">
+            <li>
+              <strong>Mass</strong>
+              <span>0.098–0.674 M☉</span>
+            </li>
+            <li>
+              <strong>Rotation period</strong>
+              <span>0.0824–174.4 days</span>
+            </li>
+            <li>
+              <strong>Age</strong>
+              <span>1.5 Myr–11.5 Gyr</span>
+            </li>
           </ul>
+
+          <h2 id="data">Training data</h2>
           <p>
-            The posterior grid itself spans 1 Myr–13.8 Gyr. Outside the
-            training ranges the flow extrapolates and results should not be
-            trusted; the batch tool excludes such rows before inference. The
-            live ranges are always available from{" "}
-            <Link href="/api-docs">
-              <code>GET /api/model</code>
-            </Link>
-            .
+            The catalog contains 6,584 unique M dwarfs with measured rotation
+            periods and calibrated ages, compiled from the following sources:
           </p>
+          <div className="table-scroll">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Population</th>
+                  <th>Age calibration</th>
+                  <th className="num">N★</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    MOCAdb (
+                    <a
+                      href="https://arxiv.org/abs/2602.15695"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Gagné et al. 2026
+                    </a>
+                    )
+                  </td>
+                  <td>Open clusters and associations</td>
+                  <td>Group ages</td>
+                  <td className="num">3,684</td>
+                </tr>
+                <tr>
+                  <td>
+                    ChronoFlow (
+                    <a
+                      href="https://arxiv.org/abs/2412.12244"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Van-Lane et al. 2025
+                    </a>
+                    )
+                  </td>
+                  <td>Open clusters and associations</td>
+                  <td>Group ages</td>
+                  <td className="num">2,126</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a
+                      href="https://arxiv.org/abs/2405.00850"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Feinstein et al. (2024)
+                    </a>
+                  </td>
+                  <td>Young moving groups, clusters, and associations</td>
+                  <td>Group ages</td>
+                  <td className="num">487</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a
+                      href="https://arxiv.org/abs/2506.04465"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Mamonova et al. (2025)
+                    </a>
+                  </td>
+                  <td>Young moving groups and clusters</td>
+                  <td>Group ages</td>
+                  <td className="num">233</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a
+                      href="https://arxiv.org/abs/2307.01136"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Engle &amp; Guinan (2023)
+                    </a>
+                  </td>
+                  <td>Age-benchmarked M dwarfs</td>
+                  <td>Companion, kinematic, or system ages</td>
+                  <td className="num">37</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a
+                      href="https://arxiv.org/abs/2206.15318"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Pass et al. (2022)
+                    </a>
+                  </td>
+                  <td>Wide FGK–M and WD–M binaries</td>
+                  <td>Ages from FGK or white-dwarf companions</td>
+                  <td className="num">9</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a
+                      href="https://arxiv.org/abs/0707.2577"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Kiraga &amp; Stępień (2007)
+                    </a>
+                  </td>
+                  <td>Old-disk M dwarfs</td>
+                  <td>Approximate old-disk age (10 Gyr)</td>
+                  <td className="num">4</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a
+                      href="https://arxiv.org/abs/2403.12129"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Chiti et al. (2024)
+                    </a>
+                  </td>
+                  <td>Wide WD–M binaries</td>
+                  <td>White-dwarf total ages</td>
+                  <td className="num">4</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Total</strong>
+                  </td>
+                  <td></td>
+                  <td></td>
+                  <td className="num">
+                    <strong>6,584</strong>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 id="limitations">Limitations</h2>
+          <ul>
+            <li>
+              <strong>Fast rotators are weakly constrained.</strong> EmberFlow
+              performs best for slow rotators that have converged onto the
+              slow-rotating sequence. Fast rotators tend to give broad or
+              multimodal posteriors, since a single fast period can map to
+              several ages.
+            </li>
+            <li>
+              <strong>Sparse coverage at the extremes.</strong> The training
+              catalog has fewer stars at the youngest and oldest
+              ages, as well as at the lowest masses, meaning estimates there are less 
+              reliable.
+            </li>
+            <li>
+              <strong>Extrapolation.</strong> The flow extrapolates outside of the training ranges
+              , so these predictions should be treated with
+              caution.
+            </li>
+          </ul>
 
           <h2 id="python">Python installation</h2>
           <pre>
@@ -233,10 +400,6 @@ posteriors = ef.age_posteriors(stars)  # full (n_stars, 1000) posteriors`}</code
                 ChronoFlow: Van-Lane et al. (2025)
               </a>{" "}
               — the framework EmberFlow extends.
-            </li>
-            <li>
-              <Link href="/api-docs">REST API reference</Link> — the endpoints
-              behind this site.
             </li>
           </ul>
         </article>

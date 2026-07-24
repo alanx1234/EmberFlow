@@ -56,7 +56,7 @@ export function PosteriorChart({
       series={series}
       ticks={AGE_TICKS}
       xRange={AGE_RANGE}
-      yTitle="Posterior density (per dex)"
+      yTitle="Posterior density"
       band={{
         fromLogX: logMyr(p16Gyr),
         toLogX: logMyr(p84Gyr),

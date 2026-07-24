@@ -1,15 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { AgeRequest, ModelInfo, Prior, PRIOR_LABELS } from "@/lib/schemas";
+import { AgeRequest, ModelInfo } from "@/lib/schemas";
 import { sigFigs } from "@/lib/format-age";
-
-const EXAMPLE = {
-  name: "Example star",
-  prot: "20",
-  mass: "0.55",
-  massErr: "0.02",
-};
 
 interface StarFormProps {
   onSubmit: (req: AgeRequest) => void;
@@ -23,19 +16,9 @@ export function StarForm({ onSubmit, busy, modelInfo }: StarFormProps) {
   const [prot, setProt] = useState("");
   const [mass, setMass] = useState("");
   const [massErr, setMassErr] = useState("");
-  const [prior, setPrior] = useState<Prior>("flat_in_log_age");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const range = modelInfo?.training_range;
-
-  const fillExample = () => {
-    setName(EXAMPLE.name);
-    setProt(EXAMPLE.prot);
-    setMass(EXAMPLE.mass);
-    setMassErr(EXAMPLE.massErr);
-    setPrior("flat_in_log_age");
-    setErrors({});
-  };
 
   const parse = (v: string): number | null => {
     const n = Number(v.trim());
@@ -58,7 +41,7 @@ export function StarForm({ onSubmit, busy, modelInfo }: StarFormProps) {
       prot_days: p!,
       mass_msun: m!,
       mass_msun_err: me!,
-      prior,
+      prior: "flat_in_log_age",
     });
   };
 
@@ -66,15 +49,10 @@ export function StarForm({ onSubmit, busy, modelInfo }: StarFormProps) {
     range &&
     (() => {
       const p = parse(prot);
-      const m = parse(mass);
       const notes: string[] = [];
       if (p !== null && (p < range.prot_days[0] || p > range.prot_days[1]))
         notes.push(
           `period outside ${sigFigs(range.prot_days[0])}–${sigFigs(range.prot_days[1])} days`,
-        );
-      if (m !== null && (m < range.mass_msun[0] || m > range.mass_msun[1]))
-        notes.push(
-          `mass outside ${sigFigs(range.mass_msun[0])}–${sigFigs(range.mass_msun[1])} M☉`,
         );
       return notes;
     })();
@@ -83,7 +61,7 @@ export function StarForm({ onSubmit, busy, modelInfo }: StarFormProps) {
     <form onSubmit={submit} noValidate>
       <div className="field">
         <label htmlFor="star-name">
-          Star name or ID <span className="hint">optional, labels the result</span>
+          Star name or ID <span className="hint">optional</span>
         </label>
         <input
           id="star-name"
@@ -117,6 +95,17 @@ export function StarForm({ onSubmit, busy, modelInfo }: StarFormProps) {
         <div className="field">
           <label htmlFor="mass">
             Stellar mass <span className="hint">M☉</span>
+            {range && (
+              <span
+                className="info-tip"
+                tabIndex={0}
+                role="note"
+                aria-label={`Trained on masses ${sigFigs(range.mass_msun[0])}–${sigFigs(range.mass_msun[1])} M☉, so predictions outside this range are extrapolated.`}
+                data-tip={`Trained on masses ${sigFigs(range.mass_msun[0])}–${sigFigs(range.mass_msun[1])} M☉, so predictions outside this range are extrapolated.`}
+              >
+                i
+              </span>
+            )}
           </label>
           <input
             id="mass"
@@ -133,7 +122,16 @@ export function StarForm({ onSubmit, busy, modelInfo }: StarFormProps) {
         </div>
         <div className="field">
           <label htmlFor="mass-err">
-            Mass uncertainty <span className="hint">M☉, 1σ</span>
+            Mass uncertainty
+            <span
+              className="info-tip info-tip-right"
+              tabIndex={0}
+              role="note"
+              aria-label="Use a symmetric mass uncertainty, or the average of the lower and upper uncertainties if they differ."
+              data-tip="Use a symmetric mass uncertainty, or the average of the lower and upper uncertainties if they differ."
+            >
+              i
+            </span>
           </label>
           <input
             id="mass-err"
@@ -150,26 +148,6 @@ export function StarForm({ onSubmit, busy, modelInfo }: StarFormProps) {
         </div>
       </div>
 
-      <div className="field">
-        <label>Age prior</label>
-        <div className="radio-row" role="radiogroup" aria-label="Age prior">
-          {(Object.keys(PRIOR_LABELS) as Prior[]).map((p) => (
-            <label key={p}>
-              <input
-                type="radio"
-                name="prior"
-                checked={prior === p}
-                onChange={() => setPrior(p)}
-              />
-              {PRIOR_LABELS[p]}
-              {p === "flat_in_log_age" && (
-                <span className="hint">default</span>
-              )}
-            </label>
-          ))}
-        </div>
-      </div>
-
       {outOfRange && outOfRange.length > 0 && (
         <p className="note" style={{ marginBottom: "0.9rem" }}>
           Heads-up: {outOfRange.join("; ")}. The model will extrapolate beyond
@@ -181,14 +159,6 @@ export function StarForm({ onSubmit, busy, modelInfo }: StarFormProps) {
         <button type="submit" className="btn btn-primary" disabled={busy}>
           {busy && <span className="spinner light" aria-hidden />}
           {busy ? "Estimating…" : "Estimate age"}
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={fillExample}
-          disabled={busy}
-        >
-          Example star
         </button>
       </div>
     </form>

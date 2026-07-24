@@ -1,4 +1,4 @@
-import { ModelInfo, StarInput } from "./schemas";
+import { StarInput } from "./schemas";
 
 /** CSV column roles the batch uploader understands. */
 export type ColumnRole =
@@ -71,22 +71,23 @@ const normalize = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 export type ColumnMapping = Partial<Record<ColumnRole, string>>;
 
+// lo/hi before the symmetric error so "mass_msun_err_lo" is not swallowed by a
+// loose "mass_err" prefix match; id last so it never steals a data column.
+const ROLE_ORDER: ColumnRole[] = [
+  "prot_days",
+  "mass_msun",
+  "mass_msun_err_lo",
+  "mass_msun_err_hi",
+  "mass_msun_err",
+  "source_id",
+];
+
 /** Guess a mapping from CSV headers to column roles. Each header is used for
  * at most one role; exact canonical names win over looser synonyms. */
 export function autoMapColumns(headers: string[]): ColumnMapping {
   const mapping: ColumnMapping = {};
   const taken = new Set<string>();
-  // lo/hi before the symmetric error so "mass_msun_err_lo" is not swallowed
-  // by a loose "mass_err" prefix match; id last so it never steals a data column.
-  const roleOrder: ColumnRole[] = [
-    "prot_days",
-    "mass_msun",
-    "mass_msun_err_lo",
-    "mass_msun_err_hi",
-    "mass_msun_err",
-    "source_id",
-  ];
-  for (const role of roleOrder) {
+  for (const role of ROLE_ORDER) {
     for (const syn of SYNONYMS[role]) {
       const hit = headers.find(
         (h) => !taken.has(h) && normalize(h) === normalize(syn),
@@ -99,6 +100,62 @@ export function autoMapColumns(headers: string[]): ColumnMapping {
     }
   }
   return mapping;
+}
+
+export type Confidence = "high" | "medium" | "low";
+
+export interface ColumnGuess {
+  mapping: ColumnMapping;
+  /** confidence of each auto-assigned role */
+  confidence: Partial<Record<ColumnRole, Confidence>>;
+}
+
+const fuzzyMatch = (header: string, syn: string) => {
+  const nh = normalize(header);
+  const ns = normalize(syn);
+  if (ns.length >= 4 && nh.includes(ns)) return true;
+  if (nh.length >= 4 && ns.includes(nh)) return true;
+  return false;
+};
+
+/** Auto-map headers to roles with a confidence per assignment:
+ * exact canonical name → high, exact synonym → medium, fuzzy substring → low.
+ * Each header is used for at most one role. */
+export function guessColumns(headers: string[]): ColumnGuess {
+  const mapping: ColumnMapping = {};
+  const confidence: Partial<Record<ColumnRole, Confidence>> = {};
+  const taken = new Set<string>();
+
+  // pass 1 — exact normalized matches (canonical = high, other synonym = medium)
+  for (const role of ROLE_ORDER) {
+    const syns = SYNONYMS[role];
+    for (let i = 0; i < syns.length; i++) {
+      const hit = headers.find(
+        (h) => !taken.has(h) && normalize(h) === normalize(syns[i]),
+      );
+      if (hit) {
+        mapping[role] = hit;
+        confidence[role] = i === 0 ? "high" : "medium";
+        taken.add(hit);
+        break;
+      }
+    }
+  }
+
+  // pass 2 — fuzzy substring matches for still-unmapped roles (low confidence)
+  for (const role of ROLE_ORDER) {
+    if (mapping[role]) continue;
+    const hit = headers.find(
+      (h) => !taken.has(h) && SYNONYMS[role].some((syn) => fuzzyMatch(h, syn)),
+    );
+    if (hit) {
+      mapping[role] = hit;
+      confidence[role] = "low";
+      taken.add(hit);
+    }
+  }
+
+  return { mapping, confidence };
 }
 
 export interface ValidRow {
@@ -124,22 +181,21 @@ const toNumber = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-/** Validate parsed CSV rows against a mapping and the model's training range.
+/** Validate parsed CSV rows against a mapping.
  *
- * - missing / non-numeric required values are excluded with a reason
- * - rows outside the training range (mass or period) are excluded
+ * - missing / non-numeric / non-positive required values are excluded with a reason
  * - asymmetric errors are averaged: sigma = (lo + hi) / 2
  * - missing mass uncertainty defaults to 0
+ *
+ * Rows outside the training range are kept: for M dwarfs a slight excursion is
+ * only a mild extrapolation, so the model runs on them rather than dropping them.
  */
 export function validateRows(
   rows: Record<string, unknown>[],
   mapping: ColumnMapping,
-  trainingRange: ModelInfo["training_range"],
 ): ValidationResult {
   const valid: ValidRow[] = [];
   const excluded: ExcludedRow[] = [];
-  const [massLo, massHi] = trainingRange.mass_msun;
-  const [protLo, protHi] = trainingRange.prot_days;
 
   rows.forEach((row, index) => {
     const prot = toNumber(mapping.prot_days ? row[mapping.prot_days] : null);
@@ -159,20 +215,6 @@ export function validateRows(
     }
     if (mass <= 0) {
       excluded.push({ index, reason: "Mass must be positive" });
-      return;
-    }
-    if (prot < protLo || prot > protHi) {
-      excluded.push({
-        index,
-        reason: `Period outside training range (${protLo.toPrecision(3)}–${protHi.toPrecision(4)} days)`,
-      });
-      return;
-    }
-    if (mass < massLo || mass > massHi) {
-      excluded.push({
-        index,
-        reason: `Mass outside training range (${massLo.toPrecision(3)}–${massHi.toPrecision(3)} M☉)`,
-      });
       return;
     }
 

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { getModelInfo, postAge, ApiError } from "@/lib/api";
 import { AgeRequest, AgeResponse, ModelInfo } from "@/lib/schemas";
-import { sigFigs } from "@/lib/format-age";
 import { StarForm } from "@/components/star-form";
 import { AgeResult } from "@/components/age-result";
 
@@ -35,11 +34,13 @@ export default function EstimatePage() {
   return (
     <div className="container page">
       <div className="page-head">
-        <h1>Estimate a stellar age</h1>
+        <h1>
+          <span className="title-glyph" aria-hidden>✦</span>
+          Estimate a stellar age
+        </h1>
         <p className="lede">
-          A full Bayesian age posterior for an M dwarf from its rotation period
-          and mass — learned from {modelInfo ? modelInfo.n_train.toLocaleString() : "6,584"} literature-calibrated
-          rotators by a conditional normalizing flow.
+          Generate a full Bayesian age posterior for a single M dwarf based on
+          its rotation period and mass.
         </p>
       </div>
 
@@ -47,14 +48,6 @@ export default function EstimatePage() {
         <section className="card">
           <div className="card-title">Star inputs</div>
           <StarForm onSubmit={run} busy={busy} modelInfo={modelInfo} />
-          {modelInfo && (
-            <p className="note" style={{ marginTop: "1rem" }}>
-              Trained on masses {sigFigs(modelInfo.training_range.mass_msun[0])}–
-              {sigFigs(modelInfo.training_range.mass_msun[1])} M☉ and periods{" "}
-              {sigFigs(modelInfo.training_range.prot_days[0])}–
-              {sigFigs(modelInfo.training_range.prot_days[1])} days.
-            </p>
-          )}
         </section>
 
         <div>
@@ -68,14 +61,15 @@ export default function EstimatePage() {
               <div className="glyph" aria-hidden>✦</div>
               <h3>No estimate yet</h3>
               <p>
-                Enter a rotation period and mass, or try the{" "}
-                <strong>Example star</strong> to see a full posterior.
+                Enter a rotation period and mass to see a full posterior
               </p>
             </div>
           )}
           {busy && !result && (
-            <div className="card loading-block">
-              <span className="spinner" aria-hidden /> Running inference…
+            <div className="card empty-state is-loading">
+              <div className="glyph" aria-hidden>✦</div>
+              <h3>Running inference…</h3>
+              <p>Producing the age posterior</p>
             </div>
           )}
           {result && <AgeResult result={result} />}

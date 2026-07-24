@@ -1,17 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   autoMapColumns,
+  guessColumns,
   posteriorToCsv,
   TEMPLATE_CSV,
   toCsv,
   validateRows,
 } from "@/lib/csv";
-
-const RANGE = {
-  mass_msun: [0.098, 0.674] as [number, number],
-  prot_days: [0.0824, 174.4] as [number, number],
-  age_gyr: [0.0015, 11.5] as [number, number],
-};
 
 describe("autoMapColumns", () => {
   it("maps the canonical template headers", () => {
@@ -53,6 +48,35 @@ describe("autoMapColumns", () => {
   });
 });
 
+describe("guessColumns", () => {
+  it("scores canonical names high and other synonyms medium", () => {
+    const { mapping, confidence } = guessColumns(["prot_days", "Mstar"]);
+    expect(mapping.prot_days).toBe("prot_days");
+    expect(confidence.prot_days).toBe("high");
+    expect(mapping.mass_msun).toBe("Mstar");
+    expect(confidence.mass_msun).toBe("medium");
+  });
+
+  it("falls back to a low-confidence fuzzy match", () => {
+    const { mapping, confidence } = guessColumns(["rotation_period_days", "mass_msun"]);
+    expect(mapping.prot_days).toBe("rotation_period_days");
+    expect(confidence.prot_days).toBe("low");
+    expect(confidence.mass_msun).toBe("high");
+  });
+
+  it("leaves unrecognized headers unmapped", () => {
+    const { mapping } = guessColumns(["ra", "dec"]);
+    expect(mapping.prot_days).toBeUndefined();
+    expect(mapping.mass_msun).toBeUndefined();
+  });
+
+  it("uses each header for at most one role", () => {
+    const { mapping } = guessColumns(["mass", "mass_err_lo", "mass_err_hi"]);
+    const used = Object.values(mapping);
+    expect(new Set(used).size).toBe(used.length);
+  });
+});
+
 describe("validateRows", () => {
   const mapping = {
     source_id: "id",
@@ -68,7 +92,6 @@ describe("validateRows", () => {
         { id: "b", p: "2.4", m: "0.21", e: "" },
       ],
       mapping,
-      RANGE,
     );
     expect(excluded).toHaveLength(0);
     expect(valid).toHaveLength(2);
@@ -89,7 +112,6 @@ describe("validateRows", () => {
         { id: "c", p: "10", m: "n/a", e: "" },
       ],
       mapping,
-      RANGE,
     );
     expect(valid).toHaveLength(0);
     expect(excluded).toHaveLength(3);
@@ -97,7 +119,7 @@ describe("validateRows", () => {
     expect(excluded[2].reason).toMatch(/mass/i);
   });
 
-  it("excludes rows outside the training range before inference", () => {
+  it("keeps rows outside the training range (mild extrapolation)", () => {
     const { valid, excluded } = validateRows(
       [
         { id: "too-heavy", p: "10", m: "0.95", e: "" },
@@ -105,11 +127,13 @@ describe("validateRows", () => {
         { id: "ok", p: "10", m: "0.4", e: "" },
       ],
       mapping,
-      RANGE,
     );
-    expect(valid.map((v) => v.star.source_id)).toEqual(["ok"]);
-    expect(excluded).toHaveLength(2);
-    expect(excluded[0].reason).toMatch(/training range/);
+    expect(valid.map((v) => v.star.source_id)).toEqual([
+      "too-heavy",
+      "too-slow",
+      "ok",
+    ]);
+    expect(excluded).toHaveLength(0);
   });
 
   it("averages asymmetric uncertainties: (lo + hi) / 2", () => {
@@ -122,7 +146,6 @@ describe("validateRows", () => {
         mass_msun_err_lo: "lo",
         mass_msun_err_hi: "hi",
       },
-      RANGE,
     );
     expect(valid[0].star.mass_msun_err).toBeCloseTo(0.03);
   });
@@ -131,7 +154,6 @@ describe("validateRows", () => {
     const { valid } = validateRows(
       [{ p: "10", m: "0.4" }],
       { prot_days: "p", mass_msun: "m" },
-      RANGE,
     );
     expect(valid[0].star.source_id).toBe("row_1");
   });

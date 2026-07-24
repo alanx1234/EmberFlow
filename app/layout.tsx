@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Work_Sans } from "next/font/google";
+import { Playfair_Display, Poppins } from "next/font/google";
 import Link from "next/link";
 import { Nav } from "@/components/nav";
 import "./globals.css";
@@ -10,9 +10,10 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
-const workSans = Work_Sans({
+const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-work-sans",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-poppins",
   display: "swap",
 });
 
@@ -29,7 +30,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${playfair.variable} ${workSans.variable}`}>
+    <html lang="en" className={`${playfair.variable} ${poppins.variable}`}>
       <body>
         <div className="page-glow" />
         <header className="site-header">
@@ -56,8 +57,6 @@ export default function RootLayout({
               >
                 GitHub
               </a>
-              {" · "}
-              <Link href="/api-docs">REST API</Link>
               {" · "}
               <Link href="/docs">Documentation</Link>
             </span>

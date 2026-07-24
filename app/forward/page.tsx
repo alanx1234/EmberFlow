@@ -5,8 +5,14 @@ import { ApiError, getModelInfo, postRotation } from "@/lib/api";
 import { ModelInfo, RotationResponse } from "@/lib/schemas";
 import { sigFigs } from "@/lib/format-age";
 import { ForwardResult } from "@/components/forward-result";
+import { AgeSlider } from "@/components/age-slider";
 
-const MAX_SAMPLES = 100_000;
+interface Explore {
+  id: number;
+  mass: number;
+  massErr: number;
+  age: number;
+}
 
 export default function ForwardPage() {
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
@@ -14,11 +20,11 @@ export default function ForwardPage() {
   const [ageUnit, setAgeUnit] = useState<"Myr" | "Gyr">("Gyr");
   const [mass, setMass] = useState("");
   const [massErr, setMassErr] = useState("");
-  const [nSamples, setNSamples] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RotationResponse | null>(null);
+  const [explore, setExplore] = useState<Explore | null>(null);
 
   useEffect(() => {
     getModelInfo().then(setModelInfo).catch(() => {});
@@ -29,27 +35,15 @@ export default function ForwardPage() {
     return v.trim() !== "" && Number.isFinite(n) ? n : null;
   };
 
-  const fillExample = () => {
-    setAge("500");
-    setAgeUnit("Myr");
-    setMass("0.35");
-    setMassErr("0.02");
-    setNSamples("2000");
-    setErrors({});
-  };
-
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const errs: Record<string, string> = {};
     const a = parse(age);
     const m = parse(mass);
     const me = massErr.trim() === "" ? 0 : parse(massErr);
-    const ns = nSamples.trim() === "" ? 0 : parse(nSamples);
     if (a === null || a <= 0) errs.age = "Enter a positive age.";
     if (m === null || m <= 0) errs.mass = "Enter a positive mass in M☉.";
     if (me === null || me < 0) errs.massErr = "Enter a non-negative uncertainty.";
-    if (ns === null || ns < 0 || !Number.isInteger(ns) || ns > MAX_SAMPLES)
-      errs.nSamples = `Enter a whole number up to ${MAX_SAMPLES.toLocaleString()}.`;
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
@@ -57,16 +51,18 @@ export default function ForwardPage() {
     setBusy(true);
     setError(null);
     try {
-      setResult(
-        await postRotation({
-          age_gyr: ageGyr,
-          mass_msun: m!,
-          mass_msun_err: me!,
-          n_samples: ns!,
-        }),
-      );
+      const res = await postRotation({
+        age_gyr: ageGyr,
+        mass_msun: m!,
+        mass_msun_err: me!,
+        n_samples: 0,
+      });
+      setResult(res);
+      // reset the explore slider to this new prediction (id remounts it)
+      setExplore({ id: Date.now(), mass: m!, massErr: me!, age: ageGyr });
     } catch (err) {
       setResult(null);
+      setExplore(null);
       setError(
         err instanceof ApiError ? err.message : "Something went wrong running the forward model.",
       );
@@ -76,31 +72,23 @@ export default function ForwardPage() {
   };
 
   const range = modelInfo?.training_range;
-  const outOfRange =
-    range &&
-    (() => {
-      const a = parse(age);
-      const m = parse(mass);
-      const ageGyr = a === null ? null : ageUnit === "Gyr" ? a : a / 1000;
-      const notes: string[] = [];
-      if (ageGyr !== null && (ageGyr < range.age_gyr[0] || ageGyr > range.age_gyr[1]))
-        notes.push(
-          `age outside ${sigFigs(range.age_gyr[0] * 1000)} Myr–${sigFigs(range.age_gyr[1])} Gyr`,
-        );
-      if (m !== null && (m < range.mass_msun[0] || m > range.mass_msun[1]))
-        notes.push(
-          `mass outside ${sigFigs(range.mass_msun[0])}–${sigFigs(range.mass_msun[1])} M☉`,
-        );
-      return notes;
-    })();
+  const ageTip = range
+    ? `For ages outside ${sigFigs(range.age_gyr[0] * 1000)} Myr–${sigFigs(range.age_gyr[1])} Gyr, the model will extrapolate outside of its training range.`
+    : "";
+  const massTip = range
+    ? `Trained on masses ${sigFigs(range.mass_msun[0])}–${sigFigs(range.mass_msun[1])} M☉, so predictions outside this range are extrapolated.`
+    : "";
 
   return (
     <div className="container page">
       <div className="page-head">
-        <h1>Forward model</h1>
+        <h1>
+          <span className="title-glyph" aria-hidden>☉</span>
+          Forward model
+        </h1>
         <p className="lede">
-          Go the other way: given an age and mass, what rotation periods does
-          the learned density p(log P<sub>rot</sub> | τ, M<sub>★</sub>) predict?
+          Given an age and mass, what rotation periods does EmberFlow&apos;s
+          learned density p(log P<sub>rot</sub> | τ, M<sub>★</sub>) predict?
         </p>
       </div>
 
@@ -110,7 +98,20 @@ export default function ForwardPage() {
           <form onSubmit={submit} noValidate>
             <div className="field-row">
               <div className="field">
-                <label htmlFor="fw-age">Age</label>
+                <label htmlFor="fw-age">
+                  Age
+                  {range && (
+                    <span
+                      className="info-tip info-tip-right"
+                      tabIndex={0}
+                      role="note"
+                      aria-label={ageTip}
+                      data-tip={ageTip}
+                    >
+                      i
+                    </span>
+                  )}
+                </label>
                 <input
                   id="fw-age"
                   type="number"
@@ -141,6 +142,17 @@ export default function ForwardPage() {
               <div className="field">
                 <label htmlFor="fw-mass">
                   Stellar mass <span className="hint">M☉</span>
+                  {range && (
+                    <span
+                      className="info-tip info-tip-right"
+                      tabIndex={0}
+                      role="note"
+                      aria-label={massTip}
+                      data-tip={massTip}
+                    >
+                      i
+                    </span>
+                  )}
                 </label>
                 <input
                   id="fw-mass"
@@ -157,7 +169,16 @@ export default function ForwardPage() {
               </div>
               <div className="field">
                 <label htmlFor="fw-mass-err">
-                  Mass uncertainty <span className="hint">M☉, 1σ</span>
+                  Mass uncertainty
+                  <span
+                    className="info-tip info-tip-right"
+                    tabIndex={0}
+                    role="note"
+                    aria-label="Use a symmetric mass uncertainty, or the average of the lower and upper uncertainties if they differ."
+                    data-tip="Use a symmetric mass uncertainty, or the average of the lower and upper uncertainties if they differ."
+                  >
+                    i
+                  </span>
                 </label>
                 <input
                   id="fw-mass-err"
@@ -176,47 +197,10 @@ export default function ForwardPage() {
               </div>
             </div>
 
-            <div className="field">
-              <label htmlFor="fw-samples">
-                Rotation-period samples{" "}
-                <span className="hint">optional — draws from sample_prot()</span>
-              </label>
-              <input
-                id="fw-samples"
-                type="number"
-                inputMode="numeric"
-                step="1"
-                min="0"
-                max={MAX_SAMPLES}
-                value={nSamples}
-                onChange={(e) => setNSamples(e.target.value)}
-                placeholder="e.g. 2000"
-                aria-invalid={!!errors.nSamples}
-              />
-              {errors.nSamples && (
-                <div className="error-text">{errors.nSamples}</div>
-              )}
-            </div>
-
-            {outOfRange && outOfRange.length > 0 && (
-              <p className="note" style={{ marginBottom: "0.9rem" }}>
-                Heads-up: {outOfRange.join("; ")}. The model will extrapolate
-                beyond its training range.
-              </p>
-            )}
-
             <div className="btn-row">
               <button type="submit" className="btn btn-primary" disabled={busy}>
                 {busy && <span className="spinner light" aria-hidden />}
                 {busy ? "Evaluating…" : "Predict rotation"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={fillExample}
-                disabled={busy}
-              >
-                Example
               </button>
             </div>
           </form>
@@ -244,6 +228,17 @@ export default function ForwardPage() {
             </div>
           )}
           {result && <ForwardResult result={result} />}
+          {result && explore && range && (
+            <AgeSlider
+              key={explore.id}
+              massMsun={explore.mass}
+              massMsunErr={explore.massErr}
+              initialAgeGyr={explore.age}
+              minGyr={range.age_gyr[0]}
+              maxGyr={range.age_gyr[1]}
+              onResult={setResult}
+            />
+          )}
         </div>
       </div>
     </div>

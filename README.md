@@ -14,7 +14,7 @@ code.
   star, with lazy per-row posteriors and up-to-5-star comparison overlays
 - `/forward` — the forward model: p(log P_rot | τ, M★) with percentiles and
   optional `sample_prot()` draws
-- `/docs`, `/api-docs` — scientific documentation and REST API reference
+- `/docs` — scientific documentation
 
 ## Local development
 

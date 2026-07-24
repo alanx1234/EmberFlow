@@ -51,7 +51,7 @@ interface DensityChartProps {
   showLegend?: boolean;
 }
 
-const FONT = { family: "var(--font-work-sans), 'Work Sans', sans-serif", size: 12.5, color: "#555555" };
+const FONT = { family: "var(--font-poppins), 'Poppins', sans-serif", size: 12.5, color: "#555555" };
 const GRID = "#edf0f7";
 
 /** Shared density/posterior chart: logarithmically positioned x-axis with
@@ -165,8 +165,8 @@ export function DensityChart({
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
       font: FONT,
-      hovermode: multi ? "closest" : "x",
-      hoverdistance: multi ? 30 : -1,
+      hovermode: "closest",
+      hoverdistance: multi ? 30 : 12,
       dragmode: false as unknown as Layout["dragmode"],
       xaxis: {
         range: xRange,
