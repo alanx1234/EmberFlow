@@ -51,7 +51,7 @@ export default function RootLayout({
             </span>
             <span>
               <a
-                href="https://github.com/alanx1234/EmberFlow"
+                href="https://github.com/alanx1234/ChronoFlow-EmberFlow"
                 target="_blank"
                 rel="noreferrer"
               >

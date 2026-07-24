@@ -5,7 +5,7 @@ export const BIBTEX = `@software{emberflow2026,
   title   = {{EmberFlow}: Extending {ChronoFlow} for M-dwarf Gyrochronology},
   year    = {2026},
   version = {0.1.0},
-  url     = {https://github.com/alanx1234/EmberFlow},
+  url     = {https://github.com/alanx1234/ChronoFlow-EmberFlow},
 }
 
 @article{vanlane2025,

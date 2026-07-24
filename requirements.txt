@@ -6,7 +6,7 @@
 #
 # For LOCAL development do NOT use this file — `npm run dev:api` runs uvicorn
 # via uv with an editable install of the sibling ../emberflow checkout.
-emberflow @ git+https://github.com/alanx1234/EmberFlow.git@ab1496cae694ac3f227fa1610b9acb668b93fa5f
+emberflow @ git+https://github.com/alanx1234/ChronoFlow-EmberFlow.git@ab1496cae694ac3f227fa1610b9acb668b93fa5f
 fastapi>=0.115
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch>=2.4

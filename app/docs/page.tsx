@@ -133,7 +133,7 @@ export default function DocsPage() {
             own file of M dwarf rotators and obtain age estimates. For more
             flexibility with large catalogs, please see the{" "}
             <a
-              href="https://github.com/alanx1234/EmberFlow"
+              href="https://github.com/alanx1234/ChronoFlow-EmberFlow"
               target="_blank"
               rel="noreferrer"
             >
@@ -340,8 +340,8 @@ export default function DocsPage() {
 
           <h2 id="python">Python installation</h2>
           <pre>
-            <code>{`git clone https://github.com/alanx1234/EmberFlow.git
-cd EmberFlow
+            <code>{`git clone https://github.com/alanx1234/ChronoFlow-EmberFlow.git
+cd ChronoFlow-EmberFlow
 uv sync          # or: pip install -e ".[plot]"`}</code>
           </pre>
 
@@ -380,7 +380,7 @@ posteriors = ef.age_posteriors(stars)  # full (n_stars, 1000) posteriors`}</code
           <ul>
             <li>
               <a
-                href="https://github.com/alanx1234/EmberFlow"
+                href="https://github.com/alanx1234/ChronoFlow-EmberFlow"
                 target="_blank"
                 rel="noreferrer"
               >
