@@ -71,7 +71,7 @@ export default function DocsPage() {
             </em>
           </p>
           <p>
-            It is trained on a catalog of 6,584 M dwarfs with measured rotation
+            It is trained on a catalog of 6,558 M dwarfs with measured rotation
             periods and age estimates. EmberFlow infers stellar ages by
             inverting this learned density with Bayes&apos; theorem. As a result,
             each star receives a full age posterior instead of a single point
@@ -172,7 +172,7 @@ export default function DocsPage() {
 
           <h2 id="data">Training data</h2>
           <p>
-            The catalog contains 6,584 unique M dwarfs with measured rotation
+            The catalog contains 6,558 unique M dwarfs with measured rotation
             periods and calibrated ages, compiled from the following sources:
           </p>
           <div className="table-scroll">
@@ -200,7 +200,7 @@ export default function DocsPage() {
                   </td>
                   <td>Open clusters and associations</td>
                   <td>Group ages</td>
-                  <td className="num">3,684</td>
+                  <td className="num">3,676</td>
                 </tr>
                 <tr>
                   <td>
@@ -216,7 +216,7 @@ export default function DocsPage() {
                   </td>
                   <td>Open clusters and associations</td>
                   <td>Group ages</td>
-                  <td className="num">2,126</td>
+                  <td className="num">2,108</td>
                 </tr>
                 <tr>
                   <td>
@@ -309,7 +309,7 @@ export default function DocsPage() {
                   <td></td>
                   <td></td>
                   <td className="num">
-                    <strong>6,584</strong>
+                    <strong>6,558</strong>
                   </td>
                 </tr>
               </tbody>

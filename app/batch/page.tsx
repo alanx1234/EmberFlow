@@ -6,7 +6,7 @@ import { ApiError, postAge, postAgeBatch } from "@/lib/api";
 import { AgeResponse, BatchResult } from "@/lib/schemas";
 import { posteriorToCsv, toCsv, ValidRow } from "@/lib/csv";
 import { downloadCsv, slugify } from "@/lib/download";
-import { formatAgeWithErrors } from "@/lib/format-age";
+import { formatAgeWithErrors, sigFigs } from "@/lib/format-age";
 import { BatchUploader, ParsedCsv } from "@/components/batch-uploader";
 import { ColumnMapper } from "@/components/column-mapper";
 import { BatchTable, MAX_COMPARE } from "@/components/batch-table";
@@ -273,8 +273,12 @@ export default function BatchPage() {
                 className="btn-row"
                 style={{ justifyContent: "space-between", marginBottom: "0.6rem" }}
               >
-                <h3 style={{ margin: 0 }}>
-                  {inspected.source_id ?? "Selected star"}
+                <h3 style={{ margin: 0, fontFamily: "var(--font-secondary)" }}>
+                  {inspected.source_id ?? "Selected star"}{" "}
+                  <span className="hint">
+                    ({sigFigs(inspected.prot_days, 4)} d,{" "}
+                    {sigFigs(inspected.mass_msun, 3)} M☉)
+                  </span>
                 </h3>
                 <button
                   className="btn btn-ghost btn-sm"

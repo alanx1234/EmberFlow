@@ -608,7 +608,7 @@ pre code {
 }
 .batch-estimate-val {
   font-family: var(--font-secondary);
-  font-size: 2.15rem;
+  font-size: 2rem;
   font-weight: 700;
   line-height: 1;
   color: var(--posterior-dark);
@@ -620,7 +620,7 @@ pre code {
 }
 .batch-estimate-unc {
   font-family: var(--font-secondary);
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: var(--percentile);
 }
