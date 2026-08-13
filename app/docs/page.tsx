@@ -329,7 +329,7 @@ export default function DocsPage() {
               <strong>Sparse coverage at the extremes.</strong> The training
               catalog has fewer stars at the youngest and oldest
               ages, as well as at the lowest masses, meaning estimates there are less 
-              reliable.
+              reliable. However, this is a common issue in M dwarf gyrochronology in general.
             </li>
             <li>
               <strong>Extrapolation.</strong> The flow extrapolates outside of the training ranges
