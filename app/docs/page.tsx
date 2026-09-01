@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 const SECTIONS = [
-  ["what", "What EmberFlow estimates"],
+  ["what", "What is EmberFlow?"],
   ["inputs", "Required inputs"],
   ["directions", "Age inference and forward modeling"],
   ["interpretation", "Medians and probability intervals"],
@@ -32,7 +32,7 @@ export default function DocsPage() {
           Documentation
         </h1>
         <p className="lede">
-          How EmberFlow turns a rotation period and a mass into a full age posterior — and how to read what it gives you.
+          How EmberFlow turns a rotation period and a mass into a full age posterior, and how to read what it gives you.
         </p>
       </div>
 
@@ -48,7 +48,7 @@ export default function DocsPage() {
         </aside>
 
         <article className="docs-prose">
-          <h2 id="what">What EmberFlow estimates</h2>
+          <h2 id="what">What is EmberFlow?</h2>
           <p>
             EmberFlow is a mass-conditioned probabilistic gyrochronology model
             calibrated for M dwarfs. It extends{" "}
@@ -319,20 +319,20 @@ export default function DocsPage() {
           <h2 id="limitations">Limitations</h2>
           <ul>
             <li>
-              <strong>Fast rotators are weakly constrained.</strong> EmberFlow
+              <strong>Fast rotators are weakly constrained:</strong> EmberFlow
               performs best for slow rotators that have converged onto the
               slow-rotating sequence. Fast rotators tend to give broad or
               multimodal posteriors, since a single fast period can map to
               several ages.
             </li>
             <li>
-              <strong>Sparse coverage at the extremes.</strong> The training
+              <strong>Sparse coverage at the extremes:</strong> The training
               catalog has fewer stars at the youngest and oldest
               ages, as well as at the lowest masses, meaning estimates there are less 
               reliable. However, this is a common issue in M dwarf gyrochronology in general.
             </li>
             <li>
-              <strong>Extrapolation.</strong> The flow extrapolates outside of the training ranges
+              <strong>Extrapolation: </strong> The flow extrapolates outside of the training ranges
               , so these predictions should be treated with
               caution.
             </li>
