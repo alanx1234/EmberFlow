@@ -26,7 +26,7 @@ def test_model_card():
     assert r.status_code == 200
     card = r.json()
     assert card["name"] == "EmberFlow"
-    assert card["n_train"] == 6584
+    assert card["n_train"] == 5083
     lo, hi = card["training_range"]["mass_msun"]
     assert 0.09 < lo < 0.11 and 0.6 < hi < 0.7
     assert card["age_grid"]["points"] == 1000
@@ -34,7 +34,7 @@ def test_model_card():
 
 
 def test_age_matches_tutorial():
-    """The repository tutorial star: 1.77 −0.64/+1.04 Gyr, 68% 1.13–2.81."""
+    """The example star under the 5,083-star model: 1.98 −0.49/+0.87 Gyr, 68% 1.49–2.84."""
     r = client.post(
         "/api/age",
         json={"prot_days": 20.0, "mass_msun": 0.55, "mass_msun_err": 0.02},
@@ -42,10 +42,10 @@ def test_age_matches_tutorial():
     assert r.status_code == 200
     body = r.json()
     s = body["summary"]
-    assert s["p50_gyr"] == pytest.approx(1.77, abs=0.02)
-    assert s["p16_gyr"] == pytest.approx(1.13, abs=0.02)
-    assert s["p84_gyr"] == pytest.approx(2.81, abs=0.03)
-    assert s["mode_gyr"] == pytest.approx(1.79, abs=0.05)
+    assert s["p50_gyr"] == pytest.approx(1.98, abs=0.02)
+    assert s["p16_gyr"] == pytest.approx(1.49, abs=0.02)
+    assert s["p84_gyr"] == pytest.approx(2.84, abs=0.03)
+    assert s["mode_gyr"] == pytest.approx(1.90, abs=0.05)
 
     post = body["posterior"]
     assert len(post["log_age_myr"]) == 1000

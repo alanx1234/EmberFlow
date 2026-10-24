@@ -7,6 +7,7 @@ this module only reshapes inputs and outputs for JSON.
 """
 
 import warnings
+from pathlib import Path
 from typing import Literal
 
 import numpy as np
@@ -22,7 +23,9 @@ from emberflow import (
     flat_in_log_age,
 )
 
-ef = EmberFlow.load()
+# Weights ship with the bridge (api/weights/) rather than the pinned package, so
+# the web tool can serve the 5,083-star model before emberflow is re-released.
+ef = EmberFlow.load(Path(__file__).parent / "weights")
 
 PRIORS = {
     "flat_in_log_age": flat_in_log_age,

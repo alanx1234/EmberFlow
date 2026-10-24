@@ -71,7 +71,7 @@ export default function DocsPage() {
             </em>
           </p>
           <p>
-            It is trained on a catalog of 6,558 M dwarfs with measured rotation
+            It is trained on a catalog of 5,083 M dwarfs with measured rotation
             periods and age estimates. EmberFlow infers stellar ages by
             inverting this learned density with Bayes&apos; theorem. As a result,
             each star receives a full age posterior instead of a single point
@@ -148,9 +148,9 @@ export default function DocsPage() {
             age posterior as the point estimate. The lower and upper uncertainties of
             the age estimate
             reflect the 68% probability interval of the posterior. For instance, an
-            estimate of 1.77{" "}
-            <span style={{ whiteSpace: "nowrap" }}>(−0.64 / +1.04) Gyr</span>{" "}
-            means 68% of the posterior mass lies between 1.13 and 2.81 Gyr. 
+            estimate of 1.98{" "}
+            <span style={{ whiteSpace: "nowrap" }}>(−0.49 / +0.87) Gyr</span>{" "}
+            means 68% of the posterior mass lies between 1.49 and 2.84 Gyr.
           </p>
 
           <h2 id="ranges">Model training ranges</h2>
@@ -158,21 +158,21 @@ export default function DocsPage() {
           <ul className="range-list">
             <li>
               <strong>Mass</strong>
-              <span>0.098–0.674 M☉</span>
+              <span>0.093–0.674 M☉</span>
             </li>
             <li>
               <strong>Rotation period</strong>
-              <span>0.0824–174.4 days</span>
+              <span>0.0288–200 days</span>
             </li>
             <li>
               <strong>Age</strong>
-              <span>1.5 Myr–11.5 Gyr</span>
+              <span>0.8 Myr–11.5 Gyr</span>
             </li>
           </ul>
 
           <h2 id="data">Training data</h2>
           <p>
-            The catalog contains 6,558 unique M dwarfs with measured rotation
+            The catalog contains 5,083 unique M dwarfs with measured rotation
             periods and calibrated ages, compiled from the following sources:
           </p>
           <div className="table-scroll">
@@ -200,7 +200,7 @@ export default function DocsPage() {
                   </td>
                   <td>Open clusters and associations</td>
                   <td>Group ages</td>
-                  <td className="num">3,676</td>
+                  <td className="num">2,263</td>
                 </tr>
                 <tr>
                   <td>
@@ -230,7 +230,7 @@ export default function DocsPage() {
                   </td>
                   <td>Young moving groups, clusters, and associations</td>
                   <td>Group ages</td>
-                  <td className="num">487</td>
+                  <td className="num">468</td>
                 </tr>
                 <tr>
                   <td>
@@ -244,7 +244,7 @@ export default function DocsPage() {
                   </td>
                   <td>Young moving groups and clusters</td>
                   <td>Group ages</td>
-                  <td className="num">233</td>
+                  <td className="num">190</td>
                 </tr>
                 <tr>
                   <td>
@@ -309,7 +309,7 @@ export default function DocsPage() {
                   <td></td>
                   <td></td>
                   <td className="num">
-                    <strong>6,558</strong>
+                    <strong>5,083</strong>
                   </td>
                 </tr>
               </tbody>

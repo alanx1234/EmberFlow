@@ -12,10 +12,10 @@ test("example star produces the tutorial estimate", async ({ page }) => {
   await expect(page.getByLabel(/rotation period/i)).toHaveValue("20");
   await page.getByRole("button", { name: /estimate age/i }).click();
   // model may need to warm up on first request
-  await expect(page.locator(".result-hero .estimate")).toContainText("1.77", {
+  await expect(page.locator(".result-hero .estimate")).toContainText("1.98", {
     timeout: 90_000,
   });
-  await expect(page.locator(".result-hero .uncertainty")).toContainText("−0.64");
+  await expect(page.locator(".result-hero .uncertainty")).toContainText("−0.49");
 });
 
 test("navigation reaches every page", async ({ page }) => {
